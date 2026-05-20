@@ -139,16 +139,16 @@ export default function GameScreen({ onWin, onLose, onMenu }) {
           const newCombo = comboRef.current + 1
           setScore(s => s + pts)
           setCombo(newCombo)
-          if (newCombo >= 2) {
-            setComboToast({ pts, multi: newCombo })
-            setTimeout(() => setComboToast(null), 1200)
-          }
           const updated = prev.map(c =>
             newFlipped.includes(c.uid) ? { ...c, isFlipped: false, isMatched: true } : c
           )
           const allMatched = updated.every(c => c.isMatched)
           setTimeout(() => {
             setModal(null); setFlipped([]); setLocked(false)
+            if (newCombo >= 2) {
+              setComboToast({ pts, multi: newCombo })
+              setTimeout(() => setComboToast(null), 1200)
+            }
             if (allMatched) {
               stopBgMusic()
               if (!mutedRef.current) playWin()
@@ -157,7 +157,7 @@ export default function GameScreen({ onWin, onLose, onMenu }) {
               saveHighScore(finalScore)
               setTimeout(() => onWin(finalScore, timer), 400)
             }
-          }, 1500)
+          }, 750)
           return updated
         } else {
           if (!mutedRef.current) playIncorrect()
