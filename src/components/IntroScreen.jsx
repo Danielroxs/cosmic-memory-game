@@ -44,38 +44,24 @@ export default function IntroScreen({ onStart }) {
           ))}
         </div>
 
-        <h1
-          className="font-display font-black tracking-widest uppercase mb-1"
-          style={{
-            fontSize: 'clamp(2.5rem, 11vw, 6rem)',
-            background: 'linear-gradient(135deg, #00d4ff 0%, #ffffff 35%, #7c4dff 65%, #00d4ff 100%)',
-            backgroundSize: '200% auto',
-            WebkitBackgroundClip: 'text',
-            backgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            animation: 'shimmer 3s linear infinite',
-          }}
-        >
-          Cosmic
-        </h1>
-
-        <h2
-          className="font-display font-bold uppercase"
-          style={{
-            fontSize: 'clamp(0.85rem, 2.5vw, 1.6rem)',
-            color: '#556677',
-            letterSpacing: '0.55em',
-          }}
-        >
-          Memory Game
-        </h2>
-
-        <div className="flex items-center justify-center gap-3 mt-4">
-          <div style={{ width: '55px', height: '1px', background: 'linear-gradient(90deg, transparent, #00d4ff44)' }} />
-          <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#00d4ff44' }} />
-          <div style={{ width: '55px', height: '1px', background: 'linear-gradient(90deg, #00d4ff44, transparent)' }} />
+        <div style={{ transform: 'translateY(20px)' }}>
+          <div style={{ animation: 'float 3s ease-in-out infinite' }}>
+            <img
+              src="/images/logo.webp"
+              alt="Cosmic Memory Game"
+              style={{
+                width:          'clamp(320px, 66vw, 650px)',
+                maxWidth:       '90vw',
+                imageRendering: 'pixelated',
+                display:        'block',
+                margin:         '-20% auto',
+              }}
+            />
+          </div>
         </div>
       </div>
+
+      <div style={{ transform: 'translateY(-clamp(0.5rem, 2vh, 1.5rem))', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(1.5rem, 5vh, 3.5rem)' }}>
 
       {/* Difficulty selector — slides in with button */}
       <div
@@ -96,7 +82,7 @@ export default function IntroScreen({ onStart }) {
               <button
                 key={key}
                 onClick={() => setDiff(key)}
-                className="px-4 py-2 rounded-full font-display text-xs uppercase tracking-wider transition-all duration-200"
+                className="btn-diff px-4 py-2 rounded-full font-display text-xs uppercase tracking-wider"
                 style={{
                   border:     `1.5px solid ${active ? d.color : d.color + '33'}`,
                   color:       active ? d.color : '#556677',
@@ -132,6 +118,8 @@ export default function IntroScreen({ onStart }) {
         </button>
       </div>
 
+      </div>
+
       <style>{`
         @keyframes shimmer {
           0%   { background-position: -200% center; }
@@ -140,6 +128,10 @@ export default function IntroScreen({ onStart }) {
         @keyframes starTwinkle {
           0%, 100% { opacity: 1;   transform: scale(1); }
           50%       { opacity: 0.3; transform: scale(0.8); }
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50%       { transform: translateY(-14px); }
         }
       `}</style>
     </div>
