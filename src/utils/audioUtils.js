@@ -80,7 +80,15 @@ export function startBgMusic() {
   _bgAudio = new Audio('/audio/background.mp3');
   _bgAudio.loop = true;
   _bgAudio.volume = 0.4;
-  _bgAudio.play().catch(() => { _bgAudio = null; });
+  _bgAudio.play().catch((e) => { if (e.name !== 'AbortError') _bgAudio = null; });
+}
+
+export function pauseBgMusic() {
+  if (_bgAudio) _bgAudio.pause();
+}
+
+export function resumeBgMusic() {
+  if (_bgAudio && _bgAudio.paused) _bgAudio.play().catch(() => {});
 }
 
 export function stopBgMusic() {

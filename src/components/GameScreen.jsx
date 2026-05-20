@@ -4,7 +4,7 @@ import Modal from './Modal'
 import StarField from './StarField'
 import { createDeck } from '../utils/cardData'
 import { calcMatchPoints, calcTimeBonus, saveHighScore } from '../utils/scoreUtils'
-import { playFlip, playCorrect, playIncorrect, playTick, playWin, playLose, startBgMusic, stopBgMusic, resumeAudioCtx } from '../utils/audioUtils'
+import { playFlip, playCorrect, playIncorrect, playTick, playWin, playLose, startBgMusic, stopBgMusic, pauseBgMusic, resumeBgMusic, resumeAudioCtx } from '../utils/audioUtils'
 
 function MuteIcon() {
   return (
@@ -58,7 +58,6 @@ export default function GameScreen({ onWin, onLose, onMenu }) {
   const mutedRef  = useRef(muted)
   const comboRef  = useRef(combo)
   const scoreRef  = useRef(score)
-  const bgStarted = useRef(false)
 
   useEffect(() => { mutedRef.current = muted }, [muted])
   useEffect(() => { comboRef.current = combo }, [combo])
@@ -81,8 +80,13 @@ export default function GameScreen({ onWin, onLose, onMenu }) {
   }, [phase])
 
   useEffect(() => {
-    if (muted) stopBgMusic()
+    startBgMusic()
     return () => stopBgMusic()
+  }, [])
+
+  useEffect(() => {
+    if (muted) pauseBgMusic()
+    else resumeBgMusic()
   }, [muted])
 
   useEffect(() => {
@@ -114,7 +118,6 @@ export default function GameScreen({ onWin, onLose, onMenu }) {
 
   function handleCardClick(card) {
     resumeAudioCtx()
-    if (!bgStarted.current && !mutedRef.current) { startBgMusic(); bgStarted.current = true }
     if (locked || timeUp) return
     if (!mutedRef.current) playFlip()
 
