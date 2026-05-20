@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import StarField from './StarField'
+import Confetti from './Confetti'
 import { calcStars, getHighScore } from '../utils/scoreUtils'
 
 function Stars({ count }) {
@@ -31,6 +32,7 @@ function ScoreLine({ label, value, color, bold }) {
 export default function ResultScreen({ won, score, timeLeft, onPlayAgain, onMenu }) {
   const [visible,   setVisible]   = useState(false)
   const [newRecord, setNewRecord] = useState(false)
+  const [confetti,  setConfetti]  = useState(false)
 
   const stars     = won ? calcStars(timeLeft, 30) : 0
   const highScore = getHighScore()
@@ -38,6 +40,7 @@ export default function ResultScreen({ won, score, timeLeft, onPlayAgain, onMenu
   useEffect(() => {
     const t = setTimeout(() => {
       setVisible(true)
+      if (won) setTimeout(() => setConfetti(true), 200)
       if (score > 0 && score >= highScore) setNewRecord(true)
     }, 60)
     return () => clearTimeout(t)
@@ -51,6 +54,7 @@ export default function ResultScreen({ won, score, timeLeft, onPlayAgain, onMenu
       style={{ background: '#050510' }}
     >
       <StarField />
+      <Confetti active={confetti} />
 
       <div className="absolute pointer-events-none" style={{
         width: '600px', height: '600px', borderRadius: '50%',
