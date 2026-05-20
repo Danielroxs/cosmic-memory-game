@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import Card from './Card'
 import Modal from './Modal'
 import StarField from './StarField'
+import ShootingStar from './ShootingStar'
 import { createDeck } from '../utils/cardData'
 import { calcMatchPoints, calcTimeBonus, saveHighScore, DIFFICULTIES } from '../utils/scoreUtils'
 import { playFlip, playCorrect, playIncorrect, playTick, playWin, playLose, startBgMusic, stopBgMusic, pauseBgMusic, resumeBgMusic, resumeAudioCtx } from '../utils/audioUtils'
@@ -56,6 +57,8 @@ export default function GameScreen({ onWin, onLose, onMenu, difficulty = 'normal
   const [peekCount,  setPeekCount]  = useState(PEEK_SECONDS)
   const [displayScore, setDisplayScore] = useState(0)
   const [hintUids,   setHintUids]   = useState([])
+  const [stars,      setStars]      = useState([])
+  const [starToast,  setStarToast]  = useState(false)
 
   const matchCount      = cards.filter(c => c.isMatched).length
   const displayScoreRef = useRef(0)
@@ -64,6 +67,7 @@ export default function GameScreen({ onWin, onLose, onMenu, difficulty = 'normal
   const scoreRef        = useRef(score)
   const cardsRef        = useRef(cards)
   const modalRef        = useRef(modal)
+  const timeUpRef       = useRef(timeUp)
 
   useEffect(() => {
     const start = displayScoreRef.current
@@ -86,6 +90,7 @@ export default function GameScreen({ onWin, onLose, onMenu, difficulty = 'normal
   useEffect(() => { scoreRef.current  = score  }, [score])
   useEffect(() => { cardsRef.current  = cards  }, [cards])
   useEffect(() => { modalRef.current  = modal  }, [modal])
+  useEffect(() => { timeUpRef.current = timeUp }, [timeUp])
 
   useEffect(() => {
     if (phase !== 'peek') return
@@ -156,6 +161,36 @@ export default function GameScreen({ onWin, onLose, onMenu, difficulty = 'normal
     }, delay)
     return () => clearTimeout(id)
   }, [phase])
+
+  useEffect(() => {
+    if (phase !== 'playing') return
+    const count = Math.random() < 0.5 ? 1 : 2
+    const slots = [
+      (0.20 + Math.random() * 0.25) * totalTime * 1000,
+      (0.55 + Math.random() * 0.25) * totalTime * 1000,
+    ].slice(0, count)
+
+    const ids = slots.map((delay, i) =>
+      setTimeout(() => {
+        if (timeUpRef.current) return
+        const side = Math.random() < 0.5 ? 'left' : 'right'
+        setStars(prev => [...prev, { id: Date.now() + i, side, y: 28 + Math.random() * 44 }])
+      }, delay)
+    )
+    return () => ids.forEach(clearTimeout)
+  }, [phase])
+
+  const starBonus = { easy: 5, normal: 4, hard: 3 }[difficulty] ?? 4
+
+  function handleStarCatch() {
+    setTimer(prev => prev + starBonus)
+    setStarToast(true)
+    setTimeout(() => setStarToast(false), 1000)
+  }
+
+  function handleStarDone(id) {
+    setStars(prev => prev.filter(s => s.id !== id))
+  }
 
   function handleQuit() {
     stopBgMusic()
@@ -349,6 +384,31 @@ export default function GameScreen({ onWin, onLose, onMenu, difficulty = 'normal
       )}
 
       {modal && <Modal type={modal} />}
+
+      {stars.map(star => (
+        <ShootingStar
+          key={star.id}
+          id={star.id}
+          side={star.side}
+          y={star.y}
+          onCatch={() => handleStarCatch()}
+          onDone={() => handleStarDone(star.id)}
+        />
+      ))}
+
+      {starToast && (
+        <div className="absolute inset-x-0 flex justify-center pointer-events-none z-30" style={{ top: '18%' }}>
+          <div style={{ animation: 'comboToast 1s ease-out forwards' }}>
+            <p className="font-display font-black text-center" style={{
+              fontSize: 'clamp(1.4rem, 4vw, 2rem)',
+              color: '#FFD700',
+              textShadow: '0 0 20px #FFD70099',
+            }}>
+              ⭐ +{starBonus}s
+            </p>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes timerPulse {
