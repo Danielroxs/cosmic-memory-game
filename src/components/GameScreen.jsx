@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Card from './Card'
 import Modal from './Modal'
 import { createDeck } from '../utils/cardData'
+import { playTick, resumeAudioCtx } from '../utils/audioUtils'
 
 function MuteIcon() {
   return (
@@ -38,22 +39,25 @@ export default function GameScreen({ onWin, onLose }) {
     if (gameOver) return
     const id = setInterval(() => {
       setTimer(prev => {
-        if (prev <= 1) {
+        const next = prev - 1
+        if (next <= 10 && next > 0 && !muted) playTick()
+        if (next <= 0) {
           clearInterval(id)
           setGameOver(true)
           return 0
         }
-        return prev - 1
+        return next
       })
     }, 1000)
     return () => clearInterval(id)
-  }, [gameOver])
+  }, [gameOver, muted])
 
   useEffect(() => {
     if (gameOver) setTimeout(() => onLose(), 700)
   }, [gameOver])
 
   function handleCardClick(card) {
+    resumeAudioCtx()
     if (locked || gameOver) return
 
     setCards(prev => prev.map(c => c.uid === card.uid ? { ...c, isFlipped: true } : c))
@@ -98,7 +102,6 @@ export default function GameScreen({ onWin, onLose }) {
       className="w-full h-screen flex flex-col items-center justify-center"
       style={{ background: '#050510' }}
     >
-      {/* Timer bar */}
       <div className="w-full px-4 mb-6" style={{ maxWidth: '520px' }}>
         <div className="w-full rounded-full mb-1" style={{ height: '5px', background: '#0f1f2f' }}>
           <div
