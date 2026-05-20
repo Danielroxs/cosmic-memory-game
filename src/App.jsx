@@ -22,7 +22,9 @@ export default function App() {
         <ResultScreen
           won={result.won}
           score={result.score}
+          timeLeft={result.timeLeft}
           onPlayAgain={() => setScreen('game')}
+          onMenu={() => setScreen('intro')}
         />
       )}
     </div>

@@ -20,3 +20,10 @@ export function saveHighScore(score) {
   }
   return false;
 }
+
+export function calcStars(secondsLeft, totalTime) {
+  const pct = secondsLeft / totalTime;
+  if (pct >= 0.5) return 3;
+  if (pct >= 0.25) return 2;
+  return 1;
+}
