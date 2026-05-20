@@ -11,8 +11,8 @@ export default function IntroScreen({ onStart }) {
 
   return (
     <div
-      className="relative w-full h-screen flex flex-col items-center justify-center gap-8 overflow-hidden"
-      style={{ background: '#050510' }}
+      className="relative w-full h-screen flex flex-col items-center justify-center overflow-hidden"
+      style={{ background: '#050510', gap: 'clamp(2.5rem, 8vh, 5.5rem)' }}
     >
       <StarField />
 
@@ -25,15 +25,16 @@ export default function IntroScreen({ onStart }) {
           transition: 'opacity 0.9s cubic-bezier(0.22,1,0.36,1), transform 0.9s cubic-bezier(0.22,1,0.36,1)',
         }}
       >
-        <div className="flex items-center justify-center gap-2 mb-5 select-none flex-wrap">
+        <div className="flex items-center justify-center select-none flex-wrap"
+          style={{ gap: 'clamp(1rem, 4vw, 3rem)', marginBottom: 'clamp(1.5rem, 4vh, 3rem)' }}>
           {['/cards/star.webp', '/cards/moon.webp', '/cards/sun.webp', '/cards/comet.webp'].map((src, i) => (
             <img
               key={i}
               src={src}
               alt=""
               style={{
-                width: 'clamp(60px, 18vw, 110px)',
-                height: 'clamp(60px, 18vw, 110px)',
+                width: 'clamp(72px, 14vw, 140px)',
+                height: 'clamp(72px, 14vw, 140px)',
                 imageRendering: 'pixelated',
                 animation: `starTwinkle 2.2s ease-in-out ${i * 0.3}s infinite`,
               }}
@@ -44,7 +45,7 @@ export default function IntroScreen({ onStart }) {
         <h1
           className="font-display font-black tracking-widest uppercase mb-1"
           style={{
-            fontSize: 'clamp(2rem, 12vw, 4.5rem)',
+            fontSize: 'clamp(2.5rem, 11vw, 6rem)',
             background: 'linear-gradient(135deg, #00d4ff 0%, #ffffff 35%, #7c4dff 65%, #00d4ff 100%)',
             backgroundSize: '200% auto',
             WebkitBackgroundClip: 'text',
@@ -59,7 +60,7 @@ export default function IntroScreen({ onStart }) {
         <h2
           className="font-display font-bold uppercase"
           style={{
-            fontSize: 'clamp(0.7rem, 3vw, 1.4rem)',
+            fontSize: 'clamp(0.85rem, 2.5vw, 1.6rem)',
             color: '#556677',
             letterSpacing: '0.55em',
           }}

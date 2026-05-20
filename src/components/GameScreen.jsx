@@ -55,9 +55,28 @@ export default function GameScreen({ onWin, onLose, onMenu }) {
 
   const matchCount = cards.filter(c => c.isMatched).length
 
+  const [displayScore, setDisplayScore] = useState(0)
+  const displayScoreRef = useRef(0)
+
   const mutedRef  = useRef(muted)
   const comboRef  = useRef(combo)
   const scoreRef  = useRef(score)
+
+  useEffect(() => {
+    const start = displayScoreRef.current
+    const diff = score - start
+    if (diff <= 0) return
+    const steps = 16
+    let step = 0
+    const id = setInterval(() => {
+      step++
+      const val = step >= steps ? score : Math.round(start + (diff * step) / steps)
+      displayScoreRef.current = val
+      setDisplayScore(val)
+      if (step >= steps) clearInterval(id)
+    }, 350 / steps)
+    return () => clearInterval(id)
+  }, [score])
 
   useEffect(() => { mutedRef.current = muted }, [muted])
   useEffect(() => { comboRef.current = combo }, [combo])
@@ -90,7 +109,7 @@ export default function GameScreen({ onWin, onLose, onMenu }) {
   }, [muted])
 
   useEffect(() => {
-    if (phase !== 'playing' || timeUp || modal) return
+    if (phase !== 'playing' || timeUp) return
     const id = setInterval(() => {
       setTimer(prev => {
         const next = prev - 1
@@ -100,7 +119,7 @@ export default function GameScreen({ onWin, onLose, onMenu }) {
       })
     }, 1000)
     return () => clearInterval(id)
-  }, [phase, timeUp, modal])
+  }, [phase, timeUp])
 
   useEffect(() => {
     if (timeUp) {
@@ -183,19 +202,6 @@ export default function GameScreen({ onWin, onLose, onMenu }) {
     >
       <StarField />
 
-      {phase === 'peek' && (
-        <div className="absolute inset-x-0 z-20 flex justify-center pointer-events-none" style={{ top: 'clamp(12px, 3vh, 24px)' }}>
-          <p className="font-display font-bold" style={{
-            fontSize: 'clamp(1.2rem, 3vw, 1.8rem)',
-            color: '#00d4ff',
-            textShadow: '0 0 20px #00d4ff',
-            animation: 'peekPulse 0.8s ease-in-out infinite',
-          }}>
-            Memorize! {peekCount}
-          </p>
-        </div>
-      )}
-
       <div
         className="relative z-10 w-full flex flex-col px-6"
         style={{ paddingTop: 'clamp(40px, 6vh, 70px)', maxWidth: '800px', margin: '0 auto', width: '100%' }}
@@ -214,7 +220,7 @@ export default function GameScreen({ onWin, onLose, onMenu }) {
           <div className="text-center px-4 py-2 rounded-xl" style={{ background: 'rgba(0,212,255,0.06)', border: '1px solid rgba(0,212,255,0.15)' }}>
             <p className="font-body text-xs tracking-widest uppercase" style={{ color: '#334455' }}>Score</p>
             <p className="font-display font-bold tabular-nums" style={{ fontSize: 'clamp(1rem, 2.5vw, 1.4rem)', color: '#00d4ff' }}>
-              {score.toLocaleString()}
+              {displayScore.toLocaleString()}
             </p>
           </div>
 
@@ -264,6 +270,29 @@ export default function GameScreen({ onWin, onLose, onMenu }) {
         </div>
       </div>
 
+      {phase === 'peek' && peekCount > 0 && (
+        <div key={peekCount} className="absolute inset-x-0 flex justify-center pointer-events-none z-30" style={{ top: '55%', transform: 'translateY(-50%)' }}>
+          <div style={{ animation: 'peekToast 0.95s ease-out forwards', textAlign: 'center' }}>
+            <p className="font-display font-black" style={{
+              fontSize: 'clamp(1.4rem, 4vw, 2rem)',
+              color: '#00d4ff',
+              textShadow: '0 0 24px #00d4ffbb',
+              letterSpacing: '0.08em',
+            }}>
+              Memorize!
+            </p>
+            <p className="font-display font-black" style={{
+              fontSize: 'clamp(3.5rem, 10vw, 5rem)',
+              color: '#00d4ff',
+              textShadow: '0 0 40px #00d4ff, 0 0 80px #00d4ff55',
+              lineHeight: 1,
+            }}>
+              {peekCount}
+            </p>
+          </div>
+        </div>
+      )}
+
       {comboToast && (
         <div className="absolute inset-x-0 flex justify-center pointer-events-none z-30" style={{ top: '40%' }}>
           <div style={{ animation: 'comboToast 1.2s ease-out forwards' }}>
@@ -280,9 +309,12 @@ export default function GameScreen({ onWin, onLose, onMenu }) {
       {modal && <Modal type={modal} />}
 
       <style>{`
-        @keyframes peekPulse {
-          0%, 100% { opacity: 1; }
-          50%       { opacity: 0.5; }
+        @keyframes peekToast {
+          0%   { opacity: 0; transform: scale(0.5); }
+          12%  { opacity: 1; transform: scale(1.2); }
+          28%  { transform: scale(1); }
+          68%  { opacity: 1; transform: scale(1); }
+          100% { opacity: 0; transform: scale(0.85); }
         }
         @keyframes comboToast {
           0%   { opacity: 0; transform: translateY(10px) scale(0.8); }
