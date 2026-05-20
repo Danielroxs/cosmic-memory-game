@@ -1,17 +1,25 @@
 import { QuestionIcon } from './Icons'
 
-export default function Card({ card }) {
+export default function Card({ card, onClick, disabled }) {
+  const isVisible = card.isFlipped || card.isMatched
+
   return (
     <div
-      className="flex items-center justify-center rounded-xl"
-      style={{
-        background: '#0a1628',
-        border: '2px solid #1a3a6a',
-        aspectRatio: '1',
-        width: '100%',
-      }}
+      className={`card-scene ${disabled ? 'disabled' : 'cursor-pointer'}`}
+      onClick={() => !disabled && !card.isFlipped && !card.isMatched && onClick(card)}
     >
-      <QuestionIcon size={52} />
+      <div className={`card-inner ${isVisible ? 'is-flipped' : ''}`}>
+        <div className="card-face card-back">
+          <QuestionIcon size={52} />
+        </div>
+        <div className="card-face card-front">
+          <img
+            src={card.image}
+            alt={card.label}
+            style={{ width: '80%', height: '80%', objectFit: 'contain', imageRendering: 'pixelated' }}
+          />
+        </div>
+      </div>
     </div>
   )
 }
