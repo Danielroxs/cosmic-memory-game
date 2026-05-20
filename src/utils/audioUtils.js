@@ -72,7 +72,7 @@ export function playWin() {
     const audio = new Audio('/audio/win.mp3');
     audio.volume = 0.8;
     audio.play().catch(() => {});
-  }, 1200);
+  }, 700);
 }
 
 export function startBgMusic() {
@@ -93,4 +93,10 @@ export function stopBgMusic() {
 
 export function resumeAudioCtx() {
   if (_ctx && _ctx.state === 'suspended') _ctx.resume();
+}
+
+export function playLose() {
+  const audio = new Audio('/audio/lose.mp3')
+  audio.volume = 0.8
+  audio.play().catch(() => {})
 }

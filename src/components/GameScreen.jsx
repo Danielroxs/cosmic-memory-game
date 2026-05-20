@@ -4,7 +4,8 @@ import Modal from './Modal'
 import StarField from './StarField'
 import { createDeck } from '../utils/cardData'
 import { calcMatchPoints, calcTimeBonus, saveHighScore } from '../utils/scoreUtils'
-import { playFlip, playCorrect, playIncorrect, playTick, playWin, startBgMusic, stopBgMusic, resumeAudioCtx } from '../utils/audioUtils'
+import { playFlip, playCorrect, playIncorrect, playTick, playWin, playLose, startBgMusic, stopBgMusic, resumeAudioCtx } from '../utils/audioUtils'
+
 
 function MuteIcon() {
   return (
@@ -100,12 +101,15 @@ export default function GameScreen({ onWin, onLose }) {
   }, [phase, timeUp])
 
   useEffect(() => {
-    if (timeUp) {
-      stopBgMusic()
-      saveHighScore(scoreRef.current)
-      setTimeout(() => onLose(scoreRef.current), 700)
+  if (timeUp) {
+    stopBgMusic()
+    setTimeout(() => {
+      if (!mutedRef.current) playLose()
+    }, 100)
+    saveHighScore(scoreRef.current)
+    setTimeout(() => onLose(scoreRef.current), 700)
     }
-  }, [timeUp])
+    }, [timeUp])
 
   function handleCardClick(card) {
     resumeAudioCtx()
