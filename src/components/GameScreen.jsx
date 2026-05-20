@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Card from './Card'
 import Modal from './Modal'
+import StarField from './StarField'
 import { createDeck } from '../utils/cardData'
-import { playTick, resumeAudioCtx } from '../utils/audioUtils'
+import { playFlip, playCorrect, playIncorrect, playTick, playWin, startBgMusic, stopBgMusic, resumeAudioCtx } from '../utils/audioUtils'
 
 function MuteIcon() {
   return (
@@ -35,12 +36,21 @@ export default function GameScreen({ onWin, onLose }) {
   const [timer, setTimer] = useState(TOTAL_TIME)
   const [timeUp, setTimeUp] = useState(false)
 
+  const mutedRef = useRef(muted)
+  useEffect(() => { mutedRef.current = muted }, [muted])
+
+  useEffect(() => {
+    if (!muted) { resumeAudioCtx(); startBgMusic(); }
+    else stopBgMusic();
+    return () => stopBgMusic();
+  }, [muted])
+
   useEffect(() => {
     if (timeUp) return
     const id = setInterval(() => {
       setTimer(prev => {
         const next = prev - 1
-        if (next <= 10 && next > 0 && !muted) playTick()
+        if (next <= 10 && next > 0 && !mutedRef.current) playTick()
         if (next <= 0) {
           clearInterval(id)
           setTimeUp(true)
@@ -50,15 +60,19 @@ export default function GameScreen({ onWin, onLose }) {
       })
     }, 1000)
     return () => clearInterval(id)
-  }, [timeUp, muted])
+  }, [timeUp])
 
   useEffect(() => {
-    if (timeUp) setTimeout(() => onLose(), 700)
+    if (timeUp) {
+      stopBgMusic()
+      setTimeout(() => onLose(), 700)
+    }
   }, [timeUp])
 
   function handleCardClick(card) {
     resumeAudioCtx()
     if (locked || timeUp) return
+    if (!mutedRef.current) playFlip()
 
     setCards(prev => prev.map(c => c.uid === card.uid ? { ...c, isFlipped: true } : c))
     const newFlipped = [...flipped, card.uid]
@@ -74,6 +88,7 @@ export default function GameScreen({ onWin, onLose }) {
         const isMatch = first && first.id === card.id
 
         if (isMatch) {
+          if (!mutedRef.current) playCorrect()
           setModal('match')
           const updated = prev.map(c =>
             newFlipped.includes(c.uid) ? { ...c, isFlipped: false, isMatched: true } : c
@@ -83,10 +98,15 @@ export default function GameScreen({ onWin, onLose }) {
             setModal(null)
             setFlipped([])
             setLocked(false)
-            if (allMatched) setTimeout(() => onWin(), 400)
+            if (allMatched) {
+              stopBgMusic()
+              if (!mutedRef.current) playWin()
+              setTimeout(() => onWin(), 400)
+            }
           }, 1500)
           return updated
         } else {
+          if (!mutedRef.current) playIncorrect()
           setModal('nomatch')
           setTimeout(() => {
             setModal(null)
@@ -106,42 +126,46 @@ export default function GameScreen({ onWin, onLose }) {
 
   return (
     <div
-      className="w-full h-screen flex flex-col items-center justify-center"
+      className="relative w-full h-screen flex flex-col items-center justify-center overflow-hidden"
       style={{ background: '#050510' }}
     >
-      <div className="w-full px-4 mb-6" style={{ maxWidth: '520px' }}>
-        <div className="w-full rounded-full mb-1" style={{ height: '5px', background: '#0f1f2f' }}>
-          <div
-            className="h-full rounded-full transition-[width] duration-[980ms] linear"
-            style={{
-              width: `${timerPct}%`,
-              background: 'linear-gradient(90deg, #00d4ff, #7c4dff)',
-            }}
-          />
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="font-display font-bold text-lg tabular-nums" style={{ color: '#00d4ff' }}>
-            {String(timer).padStart(2, '0')}s
-          </span>
-          <button
-            onClick={() => setMuted(m => !m)}
-            className="p-2 rounded-full hover:bg-white/10 transition-colors"
-            style={{ color: muted ? '#2a3a4a' : '#00d4ff' }}
-          >
-            {muted ? <MuteIcon /> : <SoundIcon />}
-          </button>
-        </div>
-      </div>
+      <StarField />
 
-      <div className="grid grid-cols-4 gap-3" style={{ maxWidth: '520px', width: '100%', padding: '0 1rem' }}>
-        {cards.map(card => (
-          <Card
-            key={card.uid}
-            card={card}
-            onClick={handleCardClick}
-            disabled={locked || timeUp || card.isMatched}
-          />
-        ))}
+      <div className="relative z-10 w-full flex flex-col items-center px-4" style={{ maxWidth: '520px' }}>
+        <div className="w-full px-4 mb-6">
+          <div className="w-full rounded-full mb-1" style={{ height: '5px', background: '#0f1f2f' }}>
+            <div
+              className="h-full rounded-full transition-[width] duration-[980ms] linear"
+              style={{
+                width: `${timerPct}%`,
+                background: 'linear-gradient(90deg, #00d4ff, #7c4dff)',
+              }}
+            />
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="font-display font-bold text-lg tabular-nums" style={{ color: '#00d4ff' }}>
+              {String(timer).padStart(2, '0')}s
+            </span>
+            <button
+              onClick={() => setMuted(m => !m)}
+              className="p-2 rounded-full hover:bg-white/10 transition-colors"
+              style={{ color: muted ? '#2a3a4a' : '#00d4ff' }}
+            >
+              {muted ? <MuteIcon /> : <SoundIcon />}
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-4 gap-3 w-full">
+          {cards.map(card => (
+            <Card
+              key={card.uid}
+              card={card}
+              onClick={handleCardClick}
+              disabled={locked || timeUp || card.isMatched}
+            />
+          ))}
+        </div>
       </div>
 
       {modal && <Modal type={modal} />}
