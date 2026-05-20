@@ -26,38 +26,64 @@ function SoundIcon() {
   )
 }
 
-const TOTAL_TIME = 30
+const TOTAL_TIME  = 30
+const PEEK_SECONDS = 3
 
 export default function GameScreen({ onWin, onLose }) {
-  const [cards, setCards] = useState(() => createDeck())
-  const [flipped, setFlipped] = useState([])
-  const [locked, setLocked] = useState(false)
-  const [muted, setMuted] = useState(false)
-  const [modal, setModal] = useState(null)
-  const [timer, setTimer] = useState(TOTAL_TIME)
-  const [timeUp, setTimeUp] = useState(false)
-  const [score, setScore] = useState(0)
-  const [combo, setCombo] = useState(0)
+  const [cards,      setCards]      = useState(() => createDeck())
+  const [flipped,    setFlipped]    = useState([])
+  const [locked,     setLocked]     = useState(true)
+  const [muted,      setMuted]      = useState(false)
+  const [modal,      setModal]      = useState(null)
+  const [timer,      setTimer]      = useState(TOTAL_TIME)
+  const [timeUp,     setTimeUp]     = useState(false)
+  const [score,      setScore]      = useState(0)
+  const [combo,      setCombo]      = useState(0)
   const [comboToast, setComboToast] = useState(null)
+  const [phase,      setPhase]      = useState('peek')
+  const [peekCount,  setPeekCount]  = useState(PEEK_SECONDS)
 
   const matchCount = cards.filter(c => c.isMatched).length
 
-  const mutedRef = useRef(muted)
-  const comboRef = useRef(combo)
-  const scoreRef = useRef(score)
+  const mutedRef   = useRef(muted)
+  const comboRef   = useRef(combo)
+  const scoreRef   = useRef(score)
+  const bgStarted  = useRef(false)
 
   useEffect(() => { mutedRef.current = muted }, [muted])
   useEffect(() => { comboRef.current = combo }, [combo])
   useEffect(() => { scoreRef.current = score }, [score])
 
+  // Peek phase — show all cards for 3s then hide
   useEffect(() => {
-    if (!muted) { resumeAudioCtx(); startBgMusic(); }
-    else stopBgMusic();
-    return () => stopBgMusic();
+    if (phase !== 'peek') return
+
+    setCards(prev => prev.map(c => ({ ...c, isFlipped: true })))
+
+    let count = PEEK_SECONDS
+    const id = setInterval(() => {
+      count--
+      setPeekCount(count)
+      if (count <= 0) {
+        clearInterval(id)
+        setCards(prev => prev.map(c => ({ ...c, isFlipped: false })))
+        setTimeout(() => {
+          setPhase('playing')
+          setLocked(false)
+        }, 650)
+      }
+    }, 1000)
+
+    return () => clearInterval(id)
+  }, [phase])
+
+  useEffect(() => {
+    if (muted) stopBgMusic()
+    return () => stopBgMusic()
   }, [muted])
 
   useEffect(() => {
-    if (timeUp) return
+    if (phase !== 'playing' || timeUp) return
     const id = setInterval(() => {
       setTimer(prev => {
         const next = prev - 1
@@ -71,7 +97,7 @@ export default function GameScreen({ onWin, onLose }) {
       })
     }, 1000)
     return () => clearInterval(id)
-  }, [timeUp])
+  }, [phase, timeUp])
 
   useEffect(() => {
     if (timeUp) {
@@ -83,6 +109,10 @@ export default function GameScreen({ onWin, onLose }) {
 
   function handleCardClick(card) {
     resumeAudioCtx()
+    if (!bgStarted.current && !mutedRef.current) {
+      startBgMusic()
+      bgStarted.current = true
+    }
     if (locked || timeUp) return
     if (!mutedRef.current) playFlip()
 
@@ -160,6 +190,19 @@ export default function GameScreen({ onWin, onLose }) {
       <StarField />
 
       <div className="relative z-10 w-full flex flex-col items-center px-4" style={{ maxWidth: '520px' }}>
+
+        {phase === 'peek' && (
+          <div className="absolute flex items-center justify-center pointer-events-none z-20" style={{ top: '-60px' }}>
+            <p className="font-display font-bold text-2xl" style={{
+              color: '#00d4ff',
+              textShadow: '0 0 20px #00d4ff',
+              animation: 'peekPulse 0.8s ease-in-out infinite',
+            }}>
+              Memorize! {peekCount}
+            </p>
+          </div>
+        )}
+
         <div className="w-full mb-5">
           <div className="w-full rounded-full mb-1" style={{ height: '5px', background: '#0f1f2f' }}>
             <div
@@ -225,6 +268,10 @@ export default function GameScreen({ onWin, onLose }) {
       {modal && <Modal type={modal} />}
 
       <style>{`
+        @keyframes peekPulse {
+          0%, 100% { opacity: 1; }
+          50%       { opacity: 0.5; }
+        }
         @keyframes comboToast {
           0%   { opacity: 0; transform: translateY(10px) scale(0.8); }
           20%  { opacity: 1; transform: translateY(-20px) scale(1.1); }
