@@ -68,6 +68,7 @@ export default function GameScreen({ onWin, onLose, onMenu, difficulty = 'normal
   const cardsRef        = useRef(cards)
   const modalRef        = useRef(modal)
   const timeUpRef       = useRef(timeUp)
+  const winRef          = useRef(false)
 
   useEffect(() => {
     const start = displayScoreRef.current
@@ -122,6 +123,7 @@ export default function GameScreen({ onWin, onLose, onMenu, difficulty = 'normal
     if (phase !== 'playing' || timeUp) return
     const id = setInterval(() => {
       setTimer(prev => {
+        if (winRef.current) return prev
         const next = prev - 1
         if (next <= 10 && next > 0 && !mutedRef.current) playTick()
         if (next <= 0) { clearInterval(id); setTimeUp(true); return 0 }
@@ -133,6 +135,7 @@ export default function GameScreen({ onWin, onLose, onMenu, difficulty = 'normal
 
   useEffect(() => {
     if (timeUp) {
+      if (winRef.current) return
       stopBgMusic()
       setTimeout(() => { if (!mutedRef.current) playLose() }, 100)
       saveHighScore(scoreRef.current)
@@ -224,6 +227,7 @@ export default function GameScreen({ onWin, onLose, onMenu, difficulty = 'normal
             newFlipped.includes(c.uid) ? { ...c, isFlipped: false, isMatched: true } : c
           )
           const allMatched = updated.every(c => c.isMatched)
+          if (allMatched) winRef.current = true
           setTimeout(() => {
             setModal(null); setFlipped([]); setLocked(false)
             if (newCombo >= 2) {
@@ -238,7 +242,7 @@ export default function GameScreen({ onWin, onLose, onMenu, difficulty = 'normal
               saveHighScore(finalScore)
               setTimeout(() => onWin(finalScore, timer), 400)
             }
-          }, 750)
+          }, 1100)
           return updated
         } else {
           if (!mutedRef.current) playIncorrect()
