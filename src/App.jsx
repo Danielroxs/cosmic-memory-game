@@ -29,6 +29,7 @@ export default function App() {
         <GameScreen
           onWin={(score, timeLeft) => navigate('result', { won: true, score, timeLeft })}
           onLose={(score) => navigate('result', { won: false, score, timeLeft: 0 })}
+          onMenu={() => navigate('intro')}
         />
       )}
       {screen === 'result' && (

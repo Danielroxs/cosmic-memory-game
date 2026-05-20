@@ -26,10 +26,20 @@ function SoundIcon() {
   )
 }
 
+function QuitIcon() {
+  return (
+    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+      <polyline points="16 17 21 12 16 7"/>
+      <line x1="21" y1="12" x2="9" y2="12"/>
+    </svg>
+  )
+}
+
 const TOTAL_TIME   = 30
 const PEEK_SECONDS = 3
 
-export default function GameScreen({ onWin, onLose }) {
+export default function GameScreen({ onWin, onLose, onMenu }) {
   const [cards,      setCards]      = useState(() => createDeck())
   const [flipped,    setFlipped]    = useState([])
   const [locked,     setLocked]     = useState(true)
@@ -96,6 +106,11 @@ export default function GameScreen({ onWin, onLose }) {
       setTimeout(() => onLose(scoreRef.current), 700)
     }
   }, [timeUp])
+
+  function handleQuit() {
+    stopBgMusic()
+    onMenu()
+  }
 
   function handleCardClick(card) {
     resumeAudioCtx()
@@ -178,7 +193,6 @@ export default function GameScreen({ onWin, onLose }) {
         </div>
       )}
 
-      {/* Top bar */}
       <div
         className="relative z-10 w-full flex flex-col px-6"
         style={{ paddingTop: 'clamp(40px, 6vh, 70px)', maxWidth: '800px', margin: '0 auto', width: '100%' }}
@@ -212,24 +226,29 @@ export default function GameScreen({ onWin, onLose }) {
             ))}
           </div>
 
-          <button
-            onClick={() => setMuted(m => !m)}
-            className="p-2 rounded-full hover:bg-white/10 transition-colors"
-            style={{ color: muted ? '#2a3a4a' : '#00d4ff' }}
-          >
-            {muted ? <MuteIcon /> : <SoundIcon />}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setMuted(m => !m)}
+              className="p-2 rounded-full hover:bg-white/10 transition-colors"
+              style={{ color: muted ? '#2a3a4a' : '#00d4ff' }}
+            >
+              {muted ? <MuteIcon /> : <SoundIcon />}
+            </button>
+            <button
+              onClick={handleQuit}
+              className="p-2 rounded-full hover:bg-white/10 transition-colors"
+              style={{ color: '#2a3a4a' }}
+            >
+              <QuitIcon />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Cards — fill remaining space */}
       <div className="relative z-10 flex-1 flex items-center justify-center w-full px-6" style={{ paddingBottom: 'clamp(16px, 4vh, 40px)' }}>
         <div
           className="grid grid-cols-4 w-full"
-          style={{
-            gap: 'clamp(8px, 2vw, 20px)',
-            maxWidth: 'min(90vh, 700px)',
-          }}
+          style={{ gap: 'clamp(8px, 2vw, 20px)', maxWidth: 'min(90vh, 700px)' }}
         >
           {cards.map(card => (
             <Card
