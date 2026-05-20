@@ -6,7 +6,6 @@ import { createDeck } from '../utils/cardData'
 import { calcMatchPoints, calcTimeBonus, saveHighScore } from '../utils/scoreUtils'
 import { playFlip, playCorrect, playIncorrect, playTick, playWin, playLose, startBgMusic, stopBgMusic, resumeAudioCtx } from '../utils/audioUtils'
 
-
 function MuteIcon() {
   return (
     <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -27,7 +26,7 @@ function SoundIcon() {
   )
 }
 
-const TOTAL_TIME  = 30
+const TOTAL_TIME   = 30
 const PEEK_SECONDS = 3
 
 export default function GameScreen({ onWin, onLose }) {
@@ -46,21 +45,18 @@ export default function GameScreen({ onWin, onLose }) {
 
   const matchCount = cards.filter(c => c.isMatched).length
 
-  const mutedRef   = useRef(muted)
-  const comboRef   = useRef(combo)
-  const scoreRef   = useRef(score)
-  const bgStarted  = useRef(false)
+  const mutedRef  = useRef(muted)
+  const comboRef  = useRef(combo)
+  const scoreRef  = useRef(score)
+  const bgStarted = useRef(false)
 
   useEffect(() => { mutedRef.current = muted }, [muted])
   useEffect(() => { comboRef.current = combo }, [combo])
   useEffect(() => { scoreRef.current = score }, [score])
 
-  // Peek phase — show all cards for 3s then hide
   useEffect(() => {
     if (phase !== 'peek') return
-
     setCards(prev => prev.map(c => ({ ...c, isFlipped: true })))
-
     let count = PEEK_SECONDS
     const id = setInterval(() => {
       count--
@@ -68,13 +64,9 @@ export default function GameScreen({ onWin, onLose }) {
       if (count <= 0) {
         clearInterval(id)
         setCards(prev => prev.map(c => ({ ...c, isFlipped: false })))
-        setTimeout(() => {
-          setPhase('playing')
-          setLocked(false)
-        }, 650)
+        setTimeout(() => { setPhase('playing'); setLocked(false) }, 650)
       }
     }, 1000)
-
     return () => clearInterval(id)
   }, [phase])
 
@@ -84,48 +76,37 @@ export default function GameScreen({ onWin, onLose }) {
   }, [muted])
 
   useEffect(() => {
-    if (phase !== 'playing' || timeUp) return
+    if (phase !== 'playing' || timeUp || modal) return
     const id = setInterval(() => {
       setTimer(prev => {
         const next = prev - 1
         if (next <= 10 && next > 0 && !mutedRef.current) playTick()
-        if (next <= 0) {
-          clearInterval(id)
-          setTimeUp(true)
-          return 0
-        }
+        if (next <= 0) { clearInterval(id); setTimeUp(true); return 0 }
         return next
       })
     }, 1000)
     return () => clearInterval(id)
-  }, [phase, timeUp])
+  }, [phase, timeUp, modal])
 
   useEffect(() => {
-  if (timeUp) {
-    stopBgMusic()
-    setTimeout(() => {
-      if (!mutedRef.current) playLose()
-    }, 100)
-    saveHighScore(scoreRef.current)
-    setTimeout(() => onLose(scoreRef.current), 700)
+    if (timeUp) {
+      stopBgMusic()
+      setTimeout(() => { if (!mutedRef.current) playLose() }, 100)
+      saveHighScore(scoreRef.current)
+      setTimeout(() => onLose(scoreRef.current), 700)
     }
-    }, [timeUp])
+  }, [timeUp])
 
   function handleCardClick(card) {
     resumeAudioCtx()
-    if (!bgStarted.current && !mutedRef.current) {
-      startBgMusic()
-      bgStarted.current = true
-    }
+    if (!bgStarted.current && !mutedRef.current) { startBgMusic(); bgStarted.current = true }
     if (locked || timeUp) return
     if (!mutedRef.current) playFlip()
 
     setCards(prev => prev.map(c => c.uid === card.uid ? { ...c, isFlipped: true } : c))
     const newFlipped = [...flipped, card.uid]
     setFlipped(newFlipped)
-
     if (newFlipped.length < 2) return
-
     setLocked(true)
 
     setTimeout(() => {
@@ -136,26 +117,20 @@ export default function GameScreen({ onWin, onLose }) {
         if (isMatch) {
           if (!mutedRef.current) playCorrect()
           setModal('match')
-
           const pts = calcMatchPoints(comboRef.current)
           const newCombo = comboRef.current + 1
           setScore(s => s + pts)
           setCombo(newCombo)
-
           if (newCombo >= 2) {
             setComboToast({ pts, multi: newCombo })
             setTimeout(() => setComboToast(null), 1200)
           }
-
           const updated = prev.map(c =>
             newFlipped.includes(c.uid) ? { ...c, isFlipped: false, isMatched: true } : c
           )
           const allMatched = updated.every(c => c.isMatched)
-
           setTimeout(() => {
-            setModal(null)
-            setFlipped([])
-            setLocked(false)
+            setModal(null); setFlipped([]); setLocked(false)
             if (allMatched) {
               stopBgMusic()
               if (!mutedRef.current) playWin()
@@ -172,11 +147,8 @@ export default function GameScreen({ onWin, onLose }) {
           setCombo(0)
           setTimeout(() => {
             setModal(null)
-            setCards(c => c.map(x =>
-              newFlipped.includes(x.uid) ? { ...x, isFlipped: false } : x
-            ))
-            setFlipped([])
-            setLocked(false)
+            setCards(c => c.map(x => newFlipped.includes(x.uid) ? { ...x, isFlipped: false } : x))
+            setFlipped([]); setLocked(false)
           }, 1500)
           return prev
         }
@@ -188,65 +160,77 @@ export default function GameScreen({ onWin, onLose }) {
 
   return (
     <div
-      className="relative w-full h-screen flex flex-col items-center justify-center overflow-hidden"
+      className="relative w-full h-screen flex flex-col overflow-hidden"
       style={{ background: '#050510' }}
     >
       <StarField />
 
-      <div className="relative z-10 w-full flex flex-col items-center px-4" style={{ maxWidth: '520px' }}>
+      {phase === 'peek' && (
+        <div className="absolute inset-x-0 z-20 flex justify-center pointer-events-none" style={{ top: 'clamp(12px, 3vh, 24px)' }}>
+          <p className="font-display font-bold" style={{
+            fontSize: 'clamp(1.2rem, 3vw, 1.8rem)',
+            color: '#00d4ff',
+            textShadow: '0 0 20px #00d4ff',
+            animation: 'peekPulse 0.8s ease-in-out infinite',
+          }}>
+            Memorize! {peekCount}
+          </p>
+        </div>
+      )}
 
-        {phase === 'peek' && (
-          <div className="absolute flex items-center justify-center pointer-events-none z-20" style={{ top: '-60px' }}>
-            <p className="font-display font-bold text-2xl" style={{
-              color: '#00d4ff',
-              textShadow: '0 0 20px #00d4ff',
-              animation: 'peekPulse 0.8s ease-in-out infinite',
-            }}>
-              Memorize! {peekCount}
+      {/* Top bar */}
+      <div
+        className="relative z-10 w-full flex flex-col px-6"
+        style={{ paddingTop: 'clamp(40px, 6vh, 70px)', maxWidth: '800px', margin: '0 auto', width: '100%' }}
+      >
+        <div className="w-full rounded-full mb-2" style={{ height: '6px', background: '#0f1f2f' }}>
+          <div
+            className="h-full rounded-full transition-[width] duration-[980ms] linear"
+            style={{ width: `${timerPct}%`, background: 'linear-gradient(90deg, #00d4ff, #7c4dff)' }}
+          />
+        </div>
+        <div className="flex justify-between items-center mt-2">
+          <span className="font-display font-bold tabular-nums" style={{ fontSize: 'clamp(1.2rem, 3vw, 1.8rem)', color: '#00d4ff' }}>
+            {String(timer).padStart(2, '0')}s
+          </span>
+
+          <div className="text-center px-4 py-2 rounded-xl" style={{ background: 'rgba(0,212,255,0.06)', border: '1px solid rgba(0,212,255,0.15)' }}>
+            <p className="font-body text-xs tracking-widest uppercase" style={{ color: '#334455' }}>Score</p>
+            <p className="font-display font-bold tabular-nums" style={{ fontSize: 'clamp(1rem, 2.5vw, 1.4rem)', color: '#00d4ff' }}>
+              {score.toLocaleString()}
             </p>
           </div>
-        )}
 
-        <div className="w-full mb-5">
-          <div className="w-full rounded-full mb-1" style={{ height: '5px', background: '#0f1f2f' }}>
-            <div
-              className="h-full rounded-full transition-[width] duration-[980ms] linear"
-              style={{ width: `${timerPct}%`, background: 'linear-gradient(90deg, #00d4ff, #7c4dff)' }}
-            />
+          <div className="flex items-center" style={{ gap: 'clamp(6px, 1.5vw, 12px)' }}>
+            {[0,1,2,3].map(i => (
+              <div key={i} className="rounded-full transition-all duration-300" style={{
+                width: 'clamp(10px, 2vw, 14px)',
+                height: 'clamp(10px, 2vw, 14px)',
+                background: i < matchCount ? '#00d4ff' : '#0f1f2f',
+                boxShadow: i < matchCount ? '0 0 8px #00d4ff' : 'none',
+              }} />
+            ))}
           </div>
-          <div className="flex justify-between items-center mt-1">
-            <span className="font-display font-bold text-lg tabular-nums" style={{ color: '#00d4ff' }}>
-              {String(timer).padStart(2, '0')}s
-            </span>
 
-            <div className="text-center px-3 py-1 rounded-xl" style={{ background: 'rgba(0,212,255,0.06)', border: '1px solid rgba(0,212,255,0.15)' }}>
-              <p className="font-body text-xs tracking-widest uppercase" style={{ color: '#334455' }}>Score</p>
-              <p className="font-display font-bold text-lg tabular-nums" style={{ color: '#00d4ff' }}>
-                {score.toLocaleString()}
-              </p>
-            </div>
-
-            <div className="flex gap-1.5 items-center">
-              {[0,1,2,3].map(i => (
-                <div key={i} className="rounded-full transition-all duration-300" style={{
-                  width: '11px', height: '11px',
-                  background: i < matchCount ? '#00d4ff' : '#0f1f2f',
-                  boxShadow: i < matchCount ? '0 0 8px #00d4ff' : 'none',
-                }} />
-              ))}
-            </div>
-
-            <button
-              onClick={() => setMuted(m => !m)}
-              className="p-2 rounded-full hover:bg-white/10 transition-colors"
-              style={{ color: muted ? '#2a3a4a' : '#00d4ff' }}
-            >
-              {muted ? <MuteIcon /> : <SoundIcon />}
-            </button>
-          </div>
+          <button
+            onClick={() => setMuted(m => !m)}
+            className="p-2 rounded-full hover:bg-white/10 transition-colors"
+            style={{ color: muted ? '#2a3a4a' : '#00d4ff' }}
+          >
+            {muted ? <MuteIcon /> : <SoundIcon />}
+          </button>
         </div>
+      </div>
 
-        <div className="grid grid-cols-4 gap-3 w-full">
+      {/* Cards — fill remaining space */}
+      <div className="relative z-10 flex-1 flex items-center justify-center w-full px-6" style={{ paddingBottom: 'clamp(16px, 4vh, 40px)' }}>
+        <div
+          className="grid grid-cols-4 w-full"
+          style={{
+            gap: 'clamp(8px, 2vw, 20px)',
+            maxWidth: 'min(90vh, 700px)',
+          }}
+        >
           {cards.map(card => (
             <Card
               key={card.uid}
@@ -256,18 +240,20 @@ export default function GameScreen({ onWin, onLose }) {
             />
           ))}
         </div>
+      </div>
 
-        {comboToast && (
-          <div className="absolute pointer-events-none z-30" style={{ top: '38%', animation: 'comboToast 1.2s ease-out forwards' }}>
-            <p className="font-display font-black text-3xl" style={{ color: '#FFD700', textShadow: '0 0 20px #FFD70088' }}>
+      {comboToast && (
+        <div className="absolute inset-x-0 flex justify-center pointer-events-none z-30" style={{ top: '40%' }}>
+          <div style={{ animation: 'comboToast 1.2s ease-out forwards' }}>
+            <p className="font-display font-black text-center" style={{ fontSize: 'clamp(1.5rem, 4vw, 2.5rem)', color: '#FFD700', textShadow: '0 0 20px #FFD70088' }}>
               🔥 ×{comboToast.multi} COMBO
             </p>
             <p className="font-display text-base text-center" style={{ color: '#FFD70099' }}>
               +{comboToast.pts} pts
             </p>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {modal && <Modal type={modal} />}
 
