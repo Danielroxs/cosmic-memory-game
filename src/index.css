@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Rajdhani', sans-serif;
+  background: #050510;
+  overflow: hidden;
+  height: 100dvh;
+  width: 100dvw;
+}
+
+.btn-primary {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.8rem 2.5rem;
+  border-radius: 50px;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(135deg, #00d4ff, #7c4dff);
+  color: #fff;
+  font-size: 1.1rem;
+  transition: box-shadow 0.2s;
+}
+
+.btn-primary:hover {
+  box-shadow: 0 0 30px rgba(0,212,255,0.5), 0 0 60px rgba(124,77,255,0.3);
+  animation: btnBounce 0.45s ease-in-out infinite;
+}
+
+@keyframes btnBounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%       { transform: translateY(-10px) scale(1.06); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+@keyframes starTwinkle {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%       { opacity: 0.3; transform: scale(0.8); }
+}
