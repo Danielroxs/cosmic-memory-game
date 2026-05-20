@@ -33,32 +33,32 @@ export default function GameScreen({ onWin, onLose }) {
   const [muted, setMuted] = useState(false)
   const [modal, setModal] = useState(null)
   const [timer, setTimer] = useState(TOTAL_TIME)
-  const [gameOver, setGameOver] = useState(false)
+  const [timeUp, setTimeUp] = useState(false)
 
   useEffect(() => {
-    if (gameOver) return
+    if (timeUp) return
     const id = setInterval(() => {
       setTimer(prev => {
         const next = prev - 1
         if (next <= 10 && next > 0 && !muted) playTick()
         if (next <= 0) {
           clearInterval(id)
-          setGameOver(true)
+          setTimeUp(true)
           return 0
         }
         return next
       })
     }, 1000)
     return () => clearInterval(id)
-  }, [gameOver, muted])
+  }, [timeUp, muted])
 
   useEffect(() => {
-    if (gameOver) setTimeout(() => onLose(), 700)
-  }, [gameOver])
+    if (timeUp) setTimeout(() => onLose(), 700)
+  }, [timeUp])
 
   function handleCardClick(card) {
     resumeAudioCtx()
-    if (locked || gameOver) return
+    if (locked || timeUp) return
 
     setCards(prev => prev.map(c => c.uid === card.uid ? { ...c, isFlipped: true } : c))
     const newFlipped = [...flipped, card.uid]
@@ -75,17 +75,24 @@ export default function GameScreen({ onWin, onLose }) {
 
         if (isMatch) {
           setModal('match')
+          const updated = prev.map(c =>
+            newFlipped.includes(c.uid) ? { ...c, isFlipped: false, isMatched: true } : c
+          )
+          const allMatched = updated.every(c => c.isMatched)
           setTimeout(() => {
             setModal(null)
             setFlipped([])
             setLocked(false)
+            if (allMatched) setTimeout(() => onWin(), 400)
           }, 1500)
-          return prev.map(c => newFlipped.includes(c.uid) ? { ...c, isFlipped: false, isMatched: true } : c)
+          return updated
         } else {
           setModal('nomatch')
           setTimeout(() => {
             setModal(null)
-            setCards(c => c.map(x => newFlipped.includes(x.uid) ? { ...x, isFlipped: false } : x))
+            setCards(c => c.map(x =>
+              newFlipped.includes(x.uid) ? { ...x, isFlipped: false } : x
+            ))
             setFlipped([])
             setLocked(false)
           }, 1500)
@@ -132,7 +139,7 @@ export default function GameScreen({ onWin, onLose }) {
             key={card.uid}
             card={card}
             onClick={handleCardClick}
-            disabled={locked || gameOver || card.isMatched}
+            disabled={locked || timeUp || card.isMatched}
           />
         ))}
       </div>
