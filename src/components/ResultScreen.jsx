@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import StarField from './StarField'
 
 export default function ResultScreen({ won, onPlayAgain }) {
   const [visible, setVisible] = useState(false)
@@ -13,6 +14,7 @@ export default function ResultScreen({ won, onPlayAgain }) {
       className="w-full h-screen flex flex-col items-center justify-center gap-8"
       style={{ background: '#050510' }}
     >
+        <StarField />
       <div
         className="text-center transition-all duration-[900ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
         style={{

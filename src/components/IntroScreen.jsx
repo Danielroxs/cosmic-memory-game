@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import StarField from './StarField'
 
 export default function IntroScreen({ onStart }) {
   const [visible, setVisible] = useState(false)
@@ -13,6 +14,7 @@ export default function IntroScreen({ onStart }) {
       className="relative w-full h-screen flex flex-col items-center justify-center gap-12 overflow-hidden"
       style={{ background: '#050510' }}
     >
+      <StarField />
       {/* Logo — slides in from the top */}
       <div
         className="z-10 text-center"
