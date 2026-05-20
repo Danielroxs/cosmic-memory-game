@@ -55,12 +55,15 @@ export default function GameScreen({ onWin, onLose, onMenu, difficulty = 'normal
   const [phase,      setPhase]      = useState('peek')
   const [peekCount,  setPeekCount]  = useState(PEEK_SECONDS)
   const [displayScore, setDisplayScore] = useState(0)
+  const [hintUids,   setHintUids]   = useState([])
 
   const matchCount      = cards.filter(c => c.isMatched).length
   const displayScoreRef = useRef(0)
   const mutedRef        = useRef(muted)
   const comboRef        = useRef(combo)
   const scoreRef        = useRef(score)
+  const cardsRef        = useRef(cards)
+  const modalRef        = useRef(modal)
 
   useEffect(() => {
     const start = displayScoreRef.current
@@ -78,9 +81,11 @@ export default function GameScreen({ onWin, onLose, onMenu, difficulty = 'normal
     return () => clearInterval(id)
   }, [score])
 
-  useEffect(() => { mutedRef.current = muted }, [muted])
-  useEffect(() => { comboRef.current = combo }, [combo])
-  useEffect(() => { scoreRef.current = score }, [score])
+  useEffect(() => { mutedRef.current  = muted  }, [muted])
+  useEffect(() => { comboRef.current  = combo  }, [combo])
+  useEffect(() => { scoreRef.current  = score  }, [score])
+  useEffect(() => { cardsRef.current  = cards  }, [cards])
+  useEffect(() => { modalRef.current  = modal  }, [modal])
 
   useEffect(() => {
     if (phase !== 'peek') return
@@ -129,6 +134,28 @@ export default function GameScreen({ onWin, onLose, onMenu, difficulty = 'normal
       setTimeout(() => onLose(scoreRef.current), 700)
     }
   }, [timeUp])
+
+  useEffect(() => {
+    if (phase !== 'playing') return
+    const minMs = 0.25 * totalTime * 1000
+    const maxMs = 0.65 * totalTime * 1000
+    const delay = minMs + Math.random() * (maxMs - minMs)
+    const id = setTimeout(() => {
+      if (modalRef.current) return
+      const unmatched = cardsRef.current.filter(c => !c.isMatched)
+      const grouped = {}
+      for (const c of unmatched) {
+        if (!grouped[c.id]) grouped[c.id] = []
+        grouped[c.id].push(c.uid)
+      }
+      const pairs = Object.values(grouped).filter(g => g.length >= 2)
+      if (pairs.length === 0) return
+      const pair = pairs[Math.floor(Math.random() * pairs.length)].slice(0, 2)
+      setHintUids(pair)
+      setTimeout(() => setHintUids([]), 1500)
+    }, delay)
+    return () => clearTimeout(id)
+  }, [phase])
 
   function handleQuit() {
     stopBgMusic()
@@ -279,6 +306,7 @@ export default function GameScreen({ onWin, onLose, onMenu, difficulty = 'normal
               card={card}
               onClick={handleCardClick}
               disabled={locked || timeUp || card.isMatched}
+              isHint={hintUids.includes(card.uid)}
             />
           ))}
         </div>
