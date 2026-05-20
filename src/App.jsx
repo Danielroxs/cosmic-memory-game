@@ -23,10 +23,14 @@ export default function App() {
       <PixelGrid ref={gridRef} />
 
       {screen === 'intro' && (
-        <IntroScreen onStart={() => navigate('game')} />
+        <IntroScreen onStart={(diff) => {
+          setResult(r => ({ ...r, difficulty: diff }))
+          navigate('game', { difficulty: diff })
+        }} />
       )}
       {screen === 'game' && (
         <GameScreen
+          difficulty={result.difficulty}
           onWin={(score, timeLeft) => navigate('result', { won: true, score, timeLeft })}
           onLose={(score) => navigate('result', { won: false, score, timeLeft: 0 })}
           onMenu={() => navigate('intro')}

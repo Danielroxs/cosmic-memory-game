@@ -3,7 +3,7 @@ import Card from './Card'
 import Modal from './Modal'
 import StarField from './StarField'
 import { createDeck } from '../utils/cardData'
-import { calcMatchPoints, calcTimeBonus, saveHighScore } from '../utils/scoreUtils'
+import { calcMatchPoints, calcTimeBonus, saveHighScore, DIFFICULTIES } from '../utils/scoreUtils'
 import { playFlip, playCorrect, playIncorrect, playTick, playWin, playLose, startBgMusic, stopBgMusic, pauseBgMusic, resumeBgMusic, resumeAudioCtx } from '../utils/audioUtils'
 
 function MuteIcon() {
@@ -36,31 +36,31 @@ function QuitIcon() {
   )
 }
 
-const TOTAL_TIME   = 30
 const PEEK_SECONDS = 3
 
-export default function GameScreen({ onWin, onLose, onMenu }) {
+export default function GameScreen({ onWin, onLose, onMenu, difficulty = 'normal' }) {
+  const totalTime = DIFFICULTIES[difficulty]?.time ?? 30
+  const diffColor = DIFFICULTIES[difficulty]?.color ?? '#00d4ff'
+
   const [cards,      setCards]      = useState(() => createDeck())
   const [flipped,    setFlipped]    = useState([])
   const [locked,     setLocked]     = useState(true)
   const [muted,      setMuted]      = useState(false)
   const [modal,      setModal]      = useState(null)
-  const [timer,      setTimer]      = useState(TOTAL_TIME)
+  const [timer,      setTimer]      = useState(totalTime)
   const [timeUp,     setTimeUp]     = useState(false)
   const [score,      setScore]      = useState(0)
   const [combo,      setCombo]      = useState(0)
   const [comboToast, setComboToast] = useState(null)
   const [phase,      setPhase]      = useState('peek')
   const [peekCount,  setPeekCount]  = useState(PEEK_SECONDS)
-
-  const matchCount = cards.filter(c => c.isMatched).length
-
   const [displayScore, setDisplayScore] = useState(0)
-  const displayScoreRef = useRef(0)
 
-  const mutedRef  = useRef(muted)
-  const comboRef  = useRef(combo)
-  const scoreRef  = useRef(score)
+  const matchCount      = cards.filter(c => c.isMatched).length
+  const displayScoreRef = useRef(0)
+  const mutedRef        = useRef(muted)
+  const comboRef        = useRef(combo)
+  const scoreRef        = useRef(score)
 
   useEffect(() => {
     const start = displayScoreRef.current
@@ -193,7 +193,8 @@ export default function GameScreen({ onWin, onLose, onMenu }) {
     }, 560)
   }
 
-  const timerPct = (timer / TOTAL_TIME) * 100
+  const timerPct = (timer / totalTime) * 100
+  const isUrgent = timer <= 10 && phase === 'playing'
 
   return (
     <div
@@ -209,17 +210,30 @@ export default function GameScreen({ onWin, onLose, onMenu }) {
         <div className="w-full rounded-full mb-2" style={{ height: '6px', background: '#0f1f2f' }}>
           <div
             className="h-full rounded-full transition-[width] duration-[980ms] linear"
-            style={{ width: `${timerPct}%`, background: 'linear-gradient(90deg, #00d4ff, #7c4dff)' }}
+            style={{
+              width: `${timerPct}%`,
+              background: isUrgent
+                ? 'linear-gradient(90deg, #ff2222, #ff6600)'
+                : `linear-gradient(90deg, ${diffColor}, #7c4dff)`,
+              boxShadow: isUrgent ? '0 0 8px #ff4400' : `0 0 6px ${diffColor}60`,
+            }}
           />
         </div>
         <div className="flex justify-between items-center mt-2">
-          <span className="font-display font-bold tabular-nums" style={{ fontSize: 'clamp(1.2rem, 3vw, 1.8rem)', color: '#00d4ff' }}>
+          <span
+            className="font-display font-bold tabular-nums"
+            style={{
+              fontSize: 'clamp(1.2rem, 3vw, 1.8rem)',
+              color: isUrgent ? '#ff5533' : diffColor,
+              animation: isUrgent ? 'timerPulse 0.55s ease-in-out infinite' : 'none',
+            }}
+          >
             {String(timer).padStart(2, '0')}s
           </span>
 
           <div className="text-center px-4 py-2 rounded-xl" style={{ background: 'rgba(0,212,255,0.06)', border: '1px solid rgba(0,212,255,0.15)' }}>
             <p className="font-body text-xs tracking-widest uppercase" style={{ color: '#334455' }}>Score</p>
-            <p className="font-display font-bold tabular-nums" style={{ fontSize: 'clamp(1rem, 2.5vw, 1.4rem)', color: '#00d4ff' }}>
+            <p className="font-display font-bold tabular-nums" style={{ fontSize: 'clamp(1rem, 2.5vw, 1.4rem)', color: diffColor }}>
               {displayScore.toLocaleString()}
             </p>
           </div>
@@ -229,8 +243,8 @@ export default function GameScreen({ onWin, onLose, onMenu }) {
               <div key={i} className="rounded-full transition-all duration-300" style={{
                 width: 'clamp(10px, 2vw, 14px)',
                 height: 'clamp(10px, 2vw, 14px)',
-                background: i < matchCount ? '#00d4ff' : '#0f1f2f',
-                boxShadow: i < matchCount ? '0 0 8px #00d4ff' : 'none',
+                background: i < matchCount ? diffColor : '#0f1f2f',
+                boxShadow: i < matchCount ? `0 0 8px ${diffColor}` : 'none',
               }} />
             ))}
           </div>
@@ -239,7 +253,7 @@ export default function GameScreen({ onWin, onLose, onMenu }) {
             <button
               onClick={() => setMuted(m => !m)}
               className="p-2 rounded-full hover:bg-white/10 transition-colors"
-              style={{ color: muted ? '#2a3a4a' : '#00d4ff' }}
+              style={{ color: muted ? '#2a3a4a' : diffColor }}
             >
               {muted ? <MuteIcon /> : <SoundIcon />}
             </button>
@@ -275,16 +289,16 @@ export default function GameScreen({ onWin, onLose, onMenu }) {
           <div style={{ animation: 'peekToast 0.95s ease-out forwards', textAlign: 'center' }}>
             <p className="font-display font-black" style={{
               fontSize: 'clamp(1.4rem, 4vw, 2rem)',
-              color: '#00d4ff',
-              textShadow: '0 0 24px #00d4ffbb',
+              color: diffColor,
+              textShadow: `0 0 24px ${diffColor}bb`,
               letterSpacing: '0.08em',
             }}>
               Memorize!
             </p>
             <p className="font-display font-black" style={{
               fontSize: 'clamp(3.5rem, 10vw, 5rem)',
-              color: '#00d4ff',
-              textShadow: '0 0 40px #00d4ff, 0 0 80px #00d4ff55',
+              color: diffColor,
+              textShadow: `0 0 40px ${diffColor}, 0 0 80px ${diffColor}55`,
               lineHeight: 1,
             }}>
               {peekCount}
@@ -309,6 +323,10 @@ export default function GameScreen({ onWin, onLose, onMenu }) {
       {modal && <Modal type={modal} />}
 
       <style>{`
+        @keyframes timerPulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50%       { opacity: 0.6; transform: scale(1.08); }
+        }
         @keyframes peekToast {
           0%   { opacity: 0; transform: scale(0.5); }
           12%  { opacity: 1; transform: scale(1.2); }

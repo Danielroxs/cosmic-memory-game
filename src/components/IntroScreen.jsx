@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import StarField from './StarField'
+import { DIFFICULTIES } from '../utils/scoreUtils'
 
 export default function IntroScreen({ onStart }) {
   const [visible, setVisible] = useState(false)
+  const [diff, setDiff] = useState('normal')
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 60)
@@ -12,7 +14,7 @@ export default function IntroScreen({ onStart }) {
   return (
     <div
       className="relative w-full h-screen flex flex-col items-center justify-center overflow-hidden"
-      style={{ background: '#050510', gap: 'clamp(2.5rem, 8vh, 5.5rem)' }}
+      style={{ background: '#050510', gap: 'clamp(1.5rem, 5vh, 3.5rem)' }}
     >
       <StarField />
 
@@ -75,16 +77,57 @@ export default function IntroScreen({ onStart }) {
         </div>
       </div>
 
+      {/* Difficulty selector — slides in with button */}
+      <div
+        className="relative z-10 flex flex-col items-center gap-3"
+        style={{
+          opacity:    visible ? 1 : 0,
+          transform:  visible ? 'translateY(0)' : 'translateY(120px)',
+          transition: 'opacity 0.9s cubic-bezier(0.22,1,0.36,1) 0.15s, transform 0.9s cubic-bezier(0.22,1,0.36,1) 0.15s',
+        }}
+      >
+        <p className="font-body text-xs tracking-[0.25em] uppercase" style={{ color: '#445566' }}>
+          Select Difficulty
+        </p>
+        <div className="flex gap-2">
+          {Object.entries(DIFFICULTIES).map(([key, d]) => {
+            const active = diff === key
+            return (
+              <button
+                key={key}
+                onClick={() => setDiff(key)}
+                className="px-4 py-2 rounded-full font-display text-xs uppercase tracking-wider transition-all duration-200"
+                style={{
+                  border:     `1.5px solid ${active ? d.color : d.color + '33'}`,
+                  color:       active ? d.color : '#556677',
+                  background:  active ? `${d.color}18` : 'transparent',
+                  boxShadow:   active ? `0 0 16px ${d.color}30` : 'none',
+                  transform:   active ? 'scale(1.05)' : 'scale(1)',
+                  fontSize:    'clamp(0.65rem, 1.5vw, 0.8rem)',
+                }}
+              >
+                {d.label}
+                <span className="ml-1 opacity-60" style={{ fontSize: '0.7em' }}>{d.description}</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
       {/* Start button — slides in from the bottom */}
       <div
         className="relative z-10"
         style={{
           opacity:    visible ? 1 : 0,
           transform:  visible ? 'translateY(0)' : 'translateY(120px)',
-          transition: 'opacity 0.9s cubic-bezier(0.22,1,0.36,1) 0.2s, transform 0.9s cubic-bezier(0.22,1,0.36,1) 0.2s',
+          transition: 'opacity 0.9s cubic-bezier(0.22,1,0.36,1) 0.25s, transform 0.9s cubic-bezier(0.22,1,0.36,1) 0.25s',
         }}
       >
-        <button className="btn-primary" onClick={onStart}>
+        <button
+          className="btn-primary"
+          onClick={() => onStart(diff)}
+          style={{ borderColor: DIFFICULTIES[diff].color, boxShadow: `0 0 20px ${DIFFICULTIES[diff].color}40` }}
+        >
           Start Game
         </button>
       </div>
