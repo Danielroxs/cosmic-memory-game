@@ -56,9 +56,11 @@ export default function GameScreen({ onWin, onLose, onMenu, difficulty = 'normal
   const [phase,      setPhase]      = useState('peek')
   const [peekCount,  setPeekCount]  = useState(PEEK_SECONDS)
   const [displayScore, setDisplayScore] = useState(0)
-  const [hintUids,   setHintUids]   = useState([])
-  const [stars,      setStars]      = useState([])
-  const [starToast,  setStarToast]  = useState(false)
+  const [hintUids,    setHintUids]    = useState([])
+  const [stars,       setStars]       = useState([])
+  const [starToast,   setStarToast]   = useState(false)
+  const [shieldActive, setShieldActive] = useState(false)
+  const [warping,      setWarping]      = useState(false)
 
   const matchCount      = cards.filter(c => c.isMatched).length
   const displayScoreRef = useRef(0)
@@ -69,6 +71,9 @@ export default function GameScreen({ onWin, onLose, onMenu, difficulty = 'normal
   const modalRef        = useRef(modal)
   const timeUpRef       = useRef(timeUp)
   const winRef          = useRef(false)
+  const shieldRef       = useRef(false)
+
+  const shieldDuration  = { easy: 2000, normal: 2500, hard: 2000 }[difficulty] ?? 2500
 
   useEffect(() => {
     const start = displayScoreRef.current
@@ -105,7 +110,7 @@ export default function GameScreen({ onWin, onLose, onMenu, difficulty = 'normal
         setCards(prev => prev.map(c => ({ ...c, isFlipped: false })))
         setTimeout(() => { setPhase('playing'); setLocked(false) }, 650)
       }
-    }, 1000)
+    }, 550)
     return () => clearInterval(id)
   }, [phase])
 
@@ -123,7 +128,7 @@ export default function GameScreen({ onWin, onLose, onMenu, difficulty = 'normal
     if (phase !== 'playing' || timeUp) return
     const id = setInterval(() => {
       setTimer(prev => {
-        if (winRef.current) return prev
+        if (winRef.current || shieldRef.current) return prev
         const next = prev - 1
         if (next <= 10 && next > 0 && !mutedRef.current) playTick()
         if (next <= 0) { clearInterval(id); setTimeUp(true); return 0 }
@@ -183,7 +188,7 @@ export default function GameScreen({ onWin, onLose, onMenu, difficulty = 'normal
     return () => ids.forEach(clearTimeout)
   }, [phase])
 
-  const starBonus = { easy: 5, normal: 4, hard: 3 }[difficulty] ?? 4
+  const starBonus = { easy: 3, normal: 4, hard: 2 }[difficulty] ?? 4
 
   function handleStarCatch() {
     setTimer(prev => prev + starBonus)
@@ -234,15 +239,24 @@ export default function GameScreen({ onWin, onLose, onMenu, difficulty = 'normal
               setComboToast({ pts, multi: newCombo })
               setTimeout(() => setComboToast(null), 1200)
             }
+            if (newCombo % 3 === 0) {
+              shieldRef.current = true
+              setShieldActive(true)
+              setTimeout(() => {
+                shieldRef.current = false
+                setShieldActive(false)
+              }, shieldDuration)
+            }
             if (allMatched) {
               stopBgMusic()
               if (!mutedRef.current) playWin()
               const bonus = calcTimeBonus(timer)
               const finalScore = scoreRef.current + bonus
               saveHighScore(finalScore)
-              setTimeout(() => onWin(finalScore, timer), 400)
+              setWarping(true)
+              setTimeout(() => onWin(finalScore, timer), 1500)
             }
-          }, 1100)
+          }, 1500)
           return updated
         } else {
           if (!mutedRef.current) playIncorrect()
@@ -267,7 +281,7 @@ export default function GameScreen({ onWin, onLose, onMenu, difficulty = 'normal
       className="relative w-full h-screen flex flex-col overflow-hidden"
       style={{ background: '#050510' }}
     >
-      <StarField />
+      <StarField warping={warping} />
 
       <div
         className="relative z-10 w-full flex flex-col px-6"
@@ -278,10 +292,14 @@ export default function GameScreen({ onWin, onLose, onMenu, difficulty = 'normal
             className="h-full rounded-full transition-[width] duration-[980ms] linear"
             style={{
               width: `${timerPct}%`,
-              background: isUrgent
-                ? 'linear-gradient(90deg, #ff2222, #ff6600)'
-                : `linear-gradient(90deg, ${diffColor}, #7c4dff)`,
-              boxShadow: isUrgent ? '0 0 8px #ff4400' : `0 0 6px ${diffColor}60`,
+              background: shieldActive
+                ? 'linear-gradient(90deg, #7c4dff, #00d4ff)'
+                : isUrgent
+                  ? 'linear-gradient(90deg, #ff2222, #ff6600)'
+                  : `linear-gradient(90deg, ${diffColor}, #7c4dff)`,
+              boxShadow: shieldActive
+                ? '0 0 12px #7c4dffaa'
+                : isUrgent ? '0 0 8px #ff4400' : `0 0 6px ${diffColor}60`,
             }}
           />
         </div>
@@ -290,8 +308,10 @@ export default function GameScreen({ onWin, onLose, onMenu, difficulty = 'normal
             className="font-display font-bold tabular-nums"
             style={{
               fontSize: 'clamp(1.2rem, 3vw, 1.8rem)',
-              color: isUrgent ? '#ff5533' : diffColor,
-              animation: isUrgent ? 'timerPulse 0.55s ease-in-out infinite' : 'none',
+              color: shieldActive ? '#7c4dff' : isUrgent ? '#ff5533' : diffColor,
+              animation: shieldActive
+                ? 'timerPulse 0.8s ease-in-out infinite'
+                : isUrgent ? 'timerPulse 0.55s ease-in-out infinite' : 'none',
             }}
           >
             {String(timer).padStart(2, '0')}s
@@ -387,6 +407,20 @@ export default function GameScreen({ onWin, onLose, onMenu, difficulty = 'normal
         </div>
       )}
 
+      {shieldActive && (
+        <div className="absolute inset-x-0 flex justify-center pointer-events-none z-30" style={{ top: '28%' }}>
+          <p className="font-display font-black uppercase text-center" style={{
+            fontSize: 'clamp(1rem, 2.5vw, 1.4rem)',
+            color: '#7c4dff',
+            textShadow: '0 0 16px #7c4dffbb, 0 0 32px #00d4ff55',
+            letterSpacing: '0.2em',
+            animation: 'shieldPulse 0.9s ease-in-out infinite',
+          }}>
+            ◈ nebula shield ◈
+          </p>
+        </div>
+      )}
+
       {modal && <Modal type={modal} />}
 
       {stars.map(star => (
@@ -425,6 +459,10 @@ export default function GameScreen({ onWin, onLose, onMenu, difficulty = 'normal
           28%  { transform: scale(1); }
           68%  { opacity: 1; transform: scale(1); }
           100% { opacity: 0; transform: scale(0.85); }
+        }
+        @keyframes shieldPulse {
+          0%, 100% { opacity: 1;   transform: scale(1);    }
+          50%       { opacity: 0.6; transform: scale(1.04); }
         }
         @keyframes comboToast {
           0%   { opacity: 0; transform: translateY(10px) scale(0.8); }

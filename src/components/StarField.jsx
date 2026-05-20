@@ -1,7 +1,17 @@
 import { useEffect, useRef } from 'react';
 
-export default function StarField() {
-  const canvasRef = useRef(null);
+export default function StarField({ warping = false }) {
+  const canvasRef    = useRef(null);
+  const warpRef      = useRef(false);
+  const warpStartRef = useRef(null);
+
+  // Sync prop → ref without touching the canvas loop
+  useEffect(() => {
+    if (warping && !warpRef.current) {
+      warpRef.current      = true;
+      warpStartRef.current = performance.now();
+    }
+  }, [warping]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -49,58 +59,97 @@ export default function StarField() {
       nextShooter = 250 + Math.random() * 350;
     }
 
-    const draw = () => {
+    const draw = (now) => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       frame++;
 
+      // Warp factor: cubic ease-in over 1500ms → explosive finish
+      let warpEase = 0;
+      if (warpRef.current && warpStartRef.current) {
+        const t = Math.min(1, (now - warpStartRef.current) / 1500);
+        warpEase = t * t * t;
+      }
+
+      const speedMult = 1 + warpEase * 70;
+      const trailBase = warpEase * 220;
+
       stars.forEach(s => {
-        s.y += s.speed;
-        if (s.y > canvas.height) { s.y = 0; s.x = Math.random() * canvas.width; }
-        const twinkle = 0.45 + 0.55 * Math.sin(frame * s.twinkleFreq + s.phase);
-        ctx.globalAlpha = Math.min(1, s.opacity * twinkle);
-        ctx.fillStyle = '#cce8ff';
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
-        ctx.fill();
+        s.y += s.speed * speedMult;
+        if (s.y > canvas.height + trailBase + 10) {
+          s.y = -10;
+          s.x = Math.random() * canvas.width;
+        }
+
+        if (warpEase > 0.02) {
+          // Warp: elongate into vertical streaks
+          const len   = trailBase * (s.size / 1.4);
+          const alpha = Math.min(0.7, s.opacity * (0.3 + warpEase * 0.7));
+          // Half cyan, half white — distributed by phase
+          const color = s.phase > Math.PI ? '0,212,255' : '255,255,255';
+
+          const grad = ctx.createLinearGradient(s.x, s.y - len, s.x, s.y);
+          grad.addColorStop(0,   `rgba(${color},0)`);
+          grad.addColorStop(0.6, `rgba(${color},${alpha * 0.35})`);
+          grad.addColorStop(1,   `rgba(${color},${alpha})`);
+
+          ctx.globalAlpha = 1;
+          ctx.strokeStyle = grad;
+          ctx.lineWidth   = Math.max(0.4, s.size * 0.45);
+          ctx.beginPath();
+          ctx.moveTo(s.x, s.y - len);
+          ctx.lineTo(s.x, s.y);
+          ctx.stroke();
+        } else {
+          // Normal: dot with twinkle
+          const twinkle = 0.45 + 0.55 * Math.sin(frame * s.twinkleFreq + s.phase);
+          ctx.globalAlpha = Math.min(1, s.opacity * twinkle);
+          ctx.fillStyle   = '#cce8ff';
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
       });
 
-      if (--nextShooter <= 0) spawnShooter();
+      // Suppress shooters during warp
+      if (warpEase < 0.15) {
+        if (--nextShooter <= 0) spawnShooter();
 
-      for (let i = shooters.length - 1; i >= 0; i--) {
-        const sh = shooters[i];
-        sh.x    += sh.vx;
-        sh.y    += sh.vy;
-        sh.alpha -= sh.fade;
-        if (sh.alpha <= 0) { shooters.splice(i, 1); continue; }
+        for (let i = shooters.length - 1; i >= 0; i--) {
+          const sh = shooters[i];
+          sh.x    += sh.vx;
+          sh.y    += sh.vy;
+          sh.alpha -= sh.fade;
+          if (sh.alpha <= 0) { shooters.splice(i, 1); continue; }
 
-        const grad = ctx.createLinearGradient(
-          sh.x - sh.vx * (sh.len / sh.vx),
-          sh.y - sh.vy * (sh.len / sh.vx),
-          sh.x, sh.y,
-        );
-        grad.addColorStop(0, `rgba(255,255,255,0)`);
-        grad.addColorStop(1, `rgba(200,240,255,${sh.alpha})`);
+          const grad = ctx.createLinearGradient(
+            sh.x - sh.vx * (sh.len / sh.vx),
+            sh.y - sh.vy * (sh.len / sh.vx),
+            sh.x, sh.y,
+          );
+          grad.addColorStop(0, `rgba(255,255,255,0)`);
+          grad.addColorStop(1, `rgba(200,240,255,${sh.alpha})`);
 
-        ctx.globalAlpha = 1;
-        ctx.strokeStyle = grad;
-        ctx.lineWidth   = 1.8;
-        ctx.beginPath();
-        ctx.moveTo(sh.x - sh.vx * 20, sh.y - sh.vy * 20);
-        ctx.lineTo(sh.x, sh.y);
-        ctx.stroke();
+          ctx.globalAlpha = 1;
+          ctx.strokeStyle = grad;
+          ctx.lineWidth   = 1.8;
+          ctx.beginPath();
+          ctx.moveTo(sh.x - sh.vx * 20, sh.y - sh.vy * 20);
+          ctx.lineTo(sh.x, sh.y);
+          ctx.stroke();
 
-        ctx.globalAlpha = sh.alpha;
-        ctx.fillStyle   = '#ffffff';
-        ctx.beginPath();
-        ctx.arc(sh.x, sh.y, 2, 0, Math.PI * 2);
-        ctx.fill();
+          ctx.globalAlpha = sh.alpha;
+          ctx.fillStyle   = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(sh.x, sh.y, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
 
       ctx.globalAlpha = 1;
       animId = requestAnimationFrame(draw);
     };
 
-    draw();
+    animId = requestAnimationFrame(draw);
     return () => {
       cancelAnimationFrame(animId);
       window.removeEventListener('resize', resize);
