@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Card from './Card'
+import Modal from './Modal'
 import { createDeck } from '../utils/cardData'
 
 function MuteIcon() {
@@ -27,11 +28,44 @@ export default function GameScreen() {
   const [flipped, setFlipped] = useState([])
   const [locked, setLocked] = useState(false)
   const [muted, setMuted] = useState(false)
+  const [modal, setModal] = useState(null)
 
   function handleCardClick(card) {
     if (locked) return
+
     setCards(prev => prev.map(c => c.uid === card.uid ? { ...c, isFlipped: true } : c))
-    setFlipped(prev => [...prev, card.uid])
+    const newFlipped = [...flipped, card.uid]
+    setFlipped(newFlipped)
+
+    if (newFlipped.length < 2) return
+
+    setLocked(true)
+
+    setTimeout(() => {
+      setCards(prev => {
+        const first = prev.find(c => c.uid === newFlipped[0])
+        const isMatch = first && first.id === card.id
+
+        if (isMatch) {
+          setModal('match')
+          setTimeout(() => {
+            setModal(null)
+            setFlipped([])
+            setLocked(false)
+          }, 1500)
+          return prev.map(c => newFlipped.includes(c.uid) ? { ...c, isFlipped: false, isMatched: true } : c)
+        } else {
+          setModal('nomatch')
+          setTimeout(() => {
+            setModal(null)
+            setCards(c => c.map(x => newFlipped.includes(x.uid) ? { ...x, isFlipped: false } : x))
+            setFlipped([])
+            setLocked(false)
+          }, 1500)
+          return prev
+        }
+      })
+    }, 560)
   }
 
   return (
@@ -39,7 +73,6 @@ export default function GameScreen() {
       className="w-full h-screen flex items-center justify-center"
       style={{ background: '#050510' }}
     >
-      {/* Mute button top right */}
       <button
         onClick={() => setMuted(m => !m)}
         className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 transition-colors"
@@ -58,6 +91,8 @@ export default function GameScreen() {
           />
         ))}
       </div>
+
+      {modal && <Modal type={modal} />}
     </div>
   )
 }
