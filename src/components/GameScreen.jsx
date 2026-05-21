@@ -278,14 +278,14 @@ export default function GameScreen({ onWin, onLose, onMenu, difficulty = 'normal
 
   return (
     <div
-      className="relative w-full h-screen flex flex-col overflow-hidden"
+      className="relative w-full min-h-screen flex flex-col overflow-y-auto"
       style={{ background: '#050510' }}
     >
       <StarField warping={warping} />
 
       <div
         className="relative z-10 w-full flex flex-col px-6"
-        style={{ paddingTop: 'clamp(40px, 6vh, 70px)', maxWidth: '800px', margin: '0 auto', width: '100%' }}
+        style={{ paddingTop: 'clamp(10px, 2vh, 70px)', maxWidth: '800px', margin: '0 auto', width: '100%' }}
       >
         <div className="w-full rounded-full mb-2" style={{ height: '6px', background: '#0f1f2f' }}>
           <div
@@ -354,10 +354,10 @@ export default function GameScreen({ onWin, onLose, onMenu, difficulty = 'normal
         </div>
       </div>
 
-      <div className="relative z-10 flex-1 flex items-center justify-center w-full px-6" style={{ paddingBottom: 'clamp(16px, 4vh, 40px)' }}>
+      <div className="relative z-10 flex-1 flex items-center justify-center w-full px-6" style={{ paddingBottom: 'clamp(8px, 2vh, 40px)' }}>
         <div
           className="grid grid-cols-4 w-full"
-          style={{ gap: 'clamp(8px, 2vw, 20px)', maxWidth: 'min(90vh, 700px)' }}
+          style={{ gap: 'clamp(8px, 2vw, 20px)', maxWidth: 'min(calc(100vh - 140px), 700px)' }}
         >
           {cards.map(card => (
             <Card
