@@ -110,7 +110,7 @@ export default function GameScreen({ onWin, onLose, onMenu, difficulty = 'normal
         setCards(prev => prev.map(c => ({ ...c, isFlipped: false })))
         setTimeout(() => { setPhase('playing'); setLocked(false) }, 650)
       }
-    }, 550)
+    }, 900)
     return () => clearInterval(id)
   }, [phase])
 
