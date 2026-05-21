@@ -100,7 +100,8 @@ export function stopBgMusic() {
 }
 
 export function resumeAudioCtx() {
-  if (_ctx && _ctx.state === 'suspended') _ctx.resume();
+  if (_ctx) _ctx.resume()
+  else getCtx()
 }
 
 export function playLose() {
